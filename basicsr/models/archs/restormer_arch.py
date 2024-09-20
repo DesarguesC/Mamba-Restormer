@@ -11,6 +11,7 @@ import numbers
 
 from einops import rearrange
 
+from .panmamba import SingleMambaBlock
 
 
 ##########################################################################
@@ -67,7 +68,7 @@ class LayerNorm(nn.Module):
 
     def forward(self, x):
         h, w = x.shape[-2:]
-        return to_4d(self.body(to_3d(x)), h, w)
+        return to_4d(self.body(to_3d(x)), h, w) # b c h w
 
 
 
@@ -137,15 +138,24 @@ class Attention(nn.Module):
 class TransformerBlock(nn.Module):
     def __init__(self, dim, num_heads, ffn_expansion_factor, bias, LayerNorm_type):
         super(TransformerBlock, self).__init__()
-
+        self.embed_dim = dim
         self.norm1 = LayerNorm(dim, LayerNorm_type)
-        self.attn = Attention(dim, num_heads, bias)
+        # self.attn = Attention(dim, num_heads, bias) # replace with Mamba
+        norm1_residual = 0
+        self.mamba_attn = nn.Sequential([SingleMambaBlock(self.embed_dim) for i in range(8)])
         self.norm2 = LayerNorm(dim, LayerNorm_type)
         self.ffn = FeedForward(dim, ffn_expansion_factor, bias)
 
     def forward(self, x):
-        x = x + self.attn(self.norm1(x))
+        residual_pan_f = 0
+        # self.norm: -> b c h w
+        print(f'[Debug] x.shape = {x.shape}')
+        attn, residual_pan_f = self.mamba_attn([self.norm1(x), residual_pan_f])
+        # 没有进行SwapMamba, 所以这里residual_pan_f是没用的
+        print(f'[Debug] after mamba_attn, attn.shape = {attn.shape}, residual_pan_f = {residual_pan_f}')
+        x = x + attn
         x = x + self.ffn(self.norm2(x))
+        print(f'[Debug] Return: x.shape = {x.shape}')
 
         return x
 
@@ -257,20 +267,20 @@ class Restormer(nn.Module):
         latent = self.latent(inp_enc_level4) 
                         
         inp_dec_level3 = self.up4_3(latent)
-        inp_dec_level3 = torch.cat([inp_dec_level3, out_enc_level3], 1)
+        inp_dec_level3 = torch.cat([inp_dec_level3, out_enc_level3], 1) # C
         inp_dec_level3 = self.reduce_chan_level3(inp_dec_level3)
         out_dec_level3 = self.decoder_level3(inp_dec_level3) 
 
         inp_dec_level2 = self.up3_2(out_dec_level3)
-        inp_dec_level2 = torch.cat([inp_dec_level2, out_enc_level2], 1)
-        inp_dec_level2 = self.reduce_chan_level2(inp_dec_level2)
-        out_dec_level2 = self.decoder_level2(inp_dec_level2) 
+        inp_dec_level2 = torch.cat([inp_dec_level2, out_enc_level2], 1) # B
+        inp_dec_level2 = self.reduce_chan_level2(inp_dec_level2) # w
+        out_dec_level2 = self.decoder_level2(inp_dec_level2) # v
 
-        inp_dec_level1 = self.up2_1(out_dec_level2)
-        inp_dec_level1 = torch.cat([inp_dec_level1, out_enc_level1], 1)
+        inp_dec_level1 = self.up2_1(out_dec_level2) # u
+        inp_dec_level1 = torch.cat([inp_dec_level1, out_enc_level1], 1) # A
         out_dec_level1 = self.decoder_level1(inp_dec_level1)
         
-        out_dec_level1 = self.refinement(out_dec_level1)
+        out_dec_level1 = self.refinement(out_dec_level1) # Refinement
 
         #### For Dual-Pixel Defocus Deblurring Task ####
         if self.dual_pixel_task:
