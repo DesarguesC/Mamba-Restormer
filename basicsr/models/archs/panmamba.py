@@ -1,4 +1,4 @@
-import math
+import math, pdb
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -180,11 +180,17 @@ class SingleMambaBlock(nn.Module):
         self.encoder = Mamba(dim,bimamba_type=None)
         self.norm = LayerNorm(dim,'with_bias')
         # self.PatchEmbe=PatchEmbed(patch_size=4, stride=4,in_chans=dim, embed_dim=dim*16)
-    def forward(self,ipt):
-        x,residual = ipt
+    
+    def forward(self, ipt):
+        x, residual = ipt
+        # pdb.set_trace()
         residual = x+residual
         x = self.norm(residual)
+        
         return (self.encoder(x),residual)
+    
+
+    
 class TokenSwapMamba(nn.Module):
     def __init__(self, dim):
         super(TokenSwapMamba, self).__init__()

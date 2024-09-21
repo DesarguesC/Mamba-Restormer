@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import pdb
 import logging
 import math
 import random
@@ -30,6 +31,7 @@ def parse_options(is_train=True):
         default='none',
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local-rank', type=int, default=0)
     args = parser.parse_args()
     opt = parse(args.opt, is_train=is_train)
 
@@ -128,9 +130,10 @@ def create_train_val_dataloader(opt, logger):
 
 
 def main():
+    
     # parse options, set distributed setting, set ramdom seed
     opt = parse_options(is_train=True)
-
+    
     torch.backends.cudnn.benchmark = True
     # torch.backends.cudnn.deterministic = True
 
@@ -163,14 +166,16 @@ def main():
         if opt['logger'].get('use_tb_logger') and 'debug' not in opt[
                 'name'] and opt['rank'] == 0:
             mkdir_and_rename(osp.join('tb_logger', opt['name']))
-
+    
     # initialize loggers
     logger, tb_logger = init_loggers(opt)
 
     # create train and validation dataloaders
     result = create_train_val_dataloader(opt, logger)
+    
     train_loader, train_sampler, val_loader, total_epochs, total_iters = result
-
+    
+    
     # create model
     if resume_state:  # resume training
         check_resume(opt, resume_state['iter'])
@@ -187,7 +192,7 @@ def main():
 
     # create message logger (formatted outputs)
     msg_logger = MessageLogger(opt, current_iter, tb_logger)
-
+    
     # dataloader prefetcher
     prefetch_mode = opt['datasets']['train'].get('prefetch_mode')
     if prefetch_mode is None or prefetch_mode == 'cpu':
@@ -206,9 +211,8 @@ def main():
         f'Start training from epoch: {start_epoch}, iter: {current_iter}')
     data_time, iter_time = time.time(), time.time()
     start_time = time.time()
-
+    
     # for epoch in range(start_epoch, total_epochs + 1):
-
     iters = opt['datasets']['train'].get('iters')
     batch_size = opt['datasets']['train'].get('batch_size_per_gpu')
     mini_batch_sizes = opt['datasets']['train'].get('mini_batch_sizes')
@@ -220,6 +224,8 @@ def main():
     logger_j = [True] * len(groups)
 
     scale = opt['scale']
+    
+    pdb.set_trace()
 
     epoch = start_epoch
     while current_iter <= total_iters:
@@ -303,12 +309,17 @@ def main():
         epoch += 1
 
     # end of epoch
-
+    
+    pdb.set_trace()
+    
     consumed_time = str(
         datetime.timedelta(seconds=int(time.time() - start_time)))
     logger.info(f'End of training. Time consumed: {consumed_time}')
     logger.info('Save the latest model.')
     model.save(epoch=-1, current_iter=-1)  # -1 stands for the latest
+    
+    exit(0)
+    
     if opt.get('val') is not None:
         model.validation(val_loader, current_iter, tb_logger,
                          opt['val']['save_img'])
