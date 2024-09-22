@@ -154,16 +154,16 @@ class TransformerBlock(nn.Module):
         residual_pan_f = 0.
         b, c, h, w = x.shape
         # self.norm: -> b c h w
-        print(f'[Debug] x.shape = {x.shape}')
+        # print(f'[Debug] x.shape = {x.shape}')
         # self.norm1(x).shape == x.shape ✅
         mamba_input = rearrange(self.norm1(x), 'b c h w -> b (h w) c')
         attn, residual_pan_f = self.mamba_attn([mamba_input, residual_pan_f])
         # 没有进行SwapMamba, 所以这里residual_pan_f是没用的
         attn = rearrange(attn, 'b (h w) c -> b c h w', h=h, w=w)
-        print(f'[Debug] after mamba_attn, attn.shape = {attn.shape}, residual_pan_f = {residual_pan_f}')
+        # print(f'[Debug] after mamba_attn, attn.shape = {attn.shape}, residual_pan_f = {residual_pan_f}')
         x = x + attn
         x = x + self.ffn(self.norm2(x))
-        print(f'[Debug] Return: x.shape = {x.shape}')
+        # print(f'[Debug] Return: x.shape = {x.shape}')
 
         return x
 
