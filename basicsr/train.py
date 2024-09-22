@@ -225,7 +225,7 @@ def main():
 
     scale = opt['scale']
     
-    pdb.set_trace()
+    # pdb.set_trace()
 
     epoch = start_epoch
     while current_iter <= total_iters:
@@ -310,7 +310,7 @@ def main():
 
     # end of epoch
     
-    pdb.set_trace()
+    # pdb.set_trace()
     
     consumed_time = str(
         datetime.timedelta(seconds=int(time.time() - start_time)))
