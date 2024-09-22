@@ -229,11 +229,16 @@ def main():
 
     epoch = start_epoch
     while current_iter <= total_iters:
+        
         train_sampler.set_epoch(epoch)
         prefetcher.reset()
         train_data = prefetcher.next()
-
+        
         while train_data is not None:
+            
+            if (current_iter+1)%10==0:
+                print('-'*10 + f'current_iter = {current_iter}' + '-'*10)
+            
             data_time = time.time() - data_time
 
             current_iter += 1

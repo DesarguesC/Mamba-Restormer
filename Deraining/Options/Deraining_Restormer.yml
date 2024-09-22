@@ -21,7 +21,7 @@ datasets:
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 1
-    batch_size_per_gpu: 1
+    batch_size_per_gpu: 4 # single A40-48GB -> batch_size=4 ✅ 8 ❎
 
     ### -------------Progressive training--------------------------
     mini_batch_sizes: [8,5,4,2,1,1]             # Batch size per gpu   
@@ -71,7 +71,7 @@ path:
 
 # training settings
 train:
-  total_iter: 2 # To test training code. Original: 300000 
+  total_iter: 3000 # About 1h on single A40-48G. Original: 300000 
   warmup_iter: -1 # no warm up
   use_grad_clip: true
 
