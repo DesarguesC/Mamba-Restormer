@@ -236,8 +236,8 @@ def main():
         
         while train_data is not None:
             
-            if (current_iter+1)%10==0:
-                print('-'*10 + f'current_iter = {current_iter}' + '-'*10)
+            if (current_iter)%100==0:
+                print('-'*20 + f'current_iter = {current_iter}' + '-'*20)
             
             data_time = time.time() - data_time
 
